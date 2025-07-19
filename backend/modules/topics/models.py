@@ -1,12 +1,12 @@
 # backend/modules/topics/models.py
-"""Topic models for StudySprint 3.0"""
+"""Topic models for StudySprint 3.0 - FIXED async property access"""
 
 from datetime import datetime
 from typing import List, Optional
 from decimal import Decimal
 
 from sqlalchemy import (
-    Boolean, Column, DateTime, ForeignKey, Integer, String, Text, Decimal as SQLDecimal
+    Boolean, Column, DateTime, ForeignKey, Integer, String, Text, Numeric
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, validates
@@ -39,7 +39,7 @@ class Topic(Base):
     total_pdfs = Column(Integer, default=0, nullable=False, server_default='0')
     total_exercises = Column(Integer, default=0, nullable=False, server_default='0')
     total_notes = Column(Integer, default=0, nullable=False, server_default='0')
-    study_progress = Column(SQLDecimal(5,2), default=0.0, nullable=False, server_default='0.0')  # Percentage 0-100
+    study_progress = Column(Numeric(5,2), default=0.0, nullable=False, server_default='0.0')  # Percentage 0-100
     
     # Time tracking
     total_study_time_minutes = Column(Integer, default=0, nullable=False, server_default='0')
@@ -65,7 +65,7 @@ class Topic(Base):
     # Relationships
     user = relationship("User", back_populates="topics")
     parent_topic = relationship("Topic", remote_side=[id], back_populates="subtopics")
-    subtopics = relationship("Topic", back_populates="parent_topic", cascade="all, delete-orphan")
+    subtopics = relationship("Topic", back_populates="parent_topic", cascade="all, delete-orphan", lazy="select")
     
     # Future relationships (will be added when modules are built)
     # pdfs = relationship("PDF", back_populates="topic", cascade="all, delete-orphan")
@@ -109,10 +109,8 @@ class Topic(Base):
         """Check if this is a root topic (no parent)"""
         return self.parent_topic_id is None
     
-    @property
-    def has_subtopics(self) -> bool:
-        """Check if topic has subtopics"""
-        return len(self.subtopics) > 0
+    # FIXED: Remove async property that causes issues
+    # Instead, we'll calculate this in the service layer when needed
     
     @property
     def total_content_items(self) -> int:
@@ -186,8 +184,8 @@ class TopicGoal(Base):
     goal_type = Column(String(50), nullable=False)  # 'study_time', 'completion', 'exercises', 'notes'
     
     # Target and progress
-    target_value = Column(SQLDecimal(10,2), nullable=False)
-    current_value = Column(SQLDecimal(10,2), default=0.0, nullable=False, server_default='0.0')
+    target_value = Column(Numeric(10,2), nullable=False)
+    current_value = Column(Numeric(10,2), default=0.0, nullable=False, server_default='0.0')
     target_date = Column(DateTime(timezone=True), nullable=True)
     
     # Status
@@ -229,18 +227,3 @@ class TopicGoal(Base):
         if self.current_value >= self.target_value and not self.is_completed:
             self.is_completed = True
             self.completed_at = datetime.utcnow()
-
-
-# Database indexes for performance
-"""
--- Performance indexes to be created in migration:
-CREATE INDEX idx_topics_user_id ON topics(user_id);
-CREATE INDEX idx_topics_parent_id ON topics(parent_topic_id);
-CREATE INDEX idx_topics_user_active ON topics(user_id, is_active);
-CREATE INDEX idx_topics_user_sort ON topics(user_id, sort_order);
-CREATE INDEX idx_topics_completion ON topics(is_completed, completed_at);
-
-CREATE INDEX idx_topic_goals_topic ON topic_goals(topic_id);
-CREATE INDEX idx_topic_goals_user ON topic_goals(user_id);
-CREATE INDEX idx_topic_goals_active ON topic_goals(is_active, target_date);
-"""

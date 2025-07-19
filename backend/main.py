@@ -1,5 +1,5 @@
-# backend/main.py (Updated to include Users module)
-"""Main FastAPI application for StudySprint 3.0 with Users module integrated"""
+# backend/main.py (Updated to include Topics module)
+"""Main FastAPI application for StudySprint 3.0 with Users and Topics modules"""
 
 import logging
 from contextlib import asynccontextmanager
@@ -16,7 +16,7 @@ from common.errors import StudySprintException
 
 # Import module routers
 from modules.users.routes import router as users_router
-# from modules.topics.routes import router as topics_router
+from modules.topics.routes import router as topics_router
 # from modules.pdfs.routes import router as pdfs_router
 # from modules.exercises.routes import router as exercises_router
 # from modules.sessions.routes import router as sessions_router
@@ -148,7 +148,8 @@ async def root():
     return {
         "message": f"Welcome to {settings.APP_NAME}",
         "version": settings.APP_VERSION,
-        "docs": "/api/docs" if settings.DEBUG else None
+        "docs": "/api/docs" if settings.DEBUG else None,
+        "modules": ["users", "topics"]  # Show available modules
     }
 
 # Module routers
@@ -158,13 +159,13 @@ app.include_router(
     tags=["authentication"]
 )
 
-# Uncomment as modules are implemented
-# app.include_router(
-#     topics_router,
-#     prefix=f"{settings.API_V1_STR}/topics",
-#     tags=["topics"]
-# )
+app.include_router(
+    topics_router,
+    prefix=f"{settings.API_V1_STR}/topics",
+    tags=["topics"]
+)
 
+# Uncomment as modules are implemented
 # app.include_router(
 #     pdfs_router,
 #     prefix=f"{settings.API_V1_STR}/pdfs",

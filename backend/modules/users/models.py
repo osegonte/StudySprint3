@@ -1,5 +1,5 @@
-# backend/modules/users/models.py (Updated with proper defaults)
-"""User models for StudySprint 3.0 - Fixed with proper defaults"""
+# backend/modules/users/models.py (Updated with Topics relationship)
+"""User models for StudySprint 3.0 - Updated with Topics relationship"""
 
 from datetime import datetime
 from typing import Optional
@@ -30,7 +30,7 @@ class User(Base):
     # Profile fields
     full_name = Column(String(255), nullable=True)
     
-    # Account status - FIXED: Added proper defaults
+    # Account status
     is_active = Column(Boolean, default=True, nullable=False, server_default='true')
     is_verified = Column(Boolean, default=False, nullable=False, server_default='false')
     is_superuser = Column(Boolean, default=False, nullable=False, server_default='false')
@@ -54,6 +54,9 @@ class User(Base):
     # Relationships
     sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
     preferences = relationship("UserPreferences", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    
+    # Topics relationship - Added
+    topics = relationship("Topic", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, username={self.username})>"
@@ -94,7 +97,7 @@ class UserSession(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     last_used_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     
-    # Session status - FIXED: Added proper defaults
+    # Session status
     is_active = Column(Boolean, default=True, nullable=False, server_default='true')
     revoked_at = Column(DateTime(timezone=True), nullable=True)
     revocation_reason = Column(String(100), nullable=True)
@@ -126,18 +129,18 @@ class UserPreferences(Base):
     # Foreign key to user (one-to-one relationship)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
     
-    # UI Preferences - FIXED: Added proper defaults
+    # UI Preferences
     theme = Column(String(20), default='light', nullable=False, server_default='light')
     language = Column(String(10), default='en', nullable=False, server_default='en')
     timezone = Column(String(50), default='UTC', nullable=False, server_default='UTC')
     
-    # Study Preferences - FIXED: Added proper defaults
+    # Study Preferences
     default_study_duration = Column(Integer, default=25, nullable=False, server_default='25')
     default_break_duration = Column(Integer, default=5, nullable=False, server_default='5')
     auto_start_timer = Column(Boolean, default=False, nullable=False, server_default='false')
     daily_study_goal_minutes = Column(Integer, default=120, nullable=False, server_default='120')
     
-    # Notification Preferences (JSON structure) - FIXED: Added proper defaults
+    # Notification Preferences (JSON structure)
     notification_settings = Column(JSONB, default={
         "email_notifications": True,
         "study_reminders": True,
@@ -147,7 +150,7 @@ class UserPreferences(Base):
         "session_summaries": True
     }, nullable=False, server_default='{}')
     
-    # Advanced Study Settings (JSON structure) - FIXED: Added proper defaults
+    # Advanced Study Settings (JSON structure)
     study_preferences = Column(JSONB, default={
         "reading_speed_tracking": True,
         "page_time_tracking": True,
@@ -157,7 +160,7 @@ class UserPreferences(Base):
         "exercise_suggestions": True
     }, nullable=False, server_default='{}')
     
-    # Privacy Settings (JSON structure) - FIXED: Added proper defaults
+    # Privacy Settings (JSON structure)
     privacy_settings = Column(JSONB, default={
         "profile_visibility": "private",
         "share_study_stats": False,
